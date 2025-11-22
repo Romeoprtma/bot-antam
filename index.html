@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Generator BOT ANTAM Bookmarklet</title>
+
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --card: #121212;
+        --input: #1c1c1c;
+        --border: #2a2a2a;
+        --primary: #00f7a7;
+        --primary-dark: #00d68d;
+        --text: #e9e9e9;
+        --subtext: #b0b0b0;
+      }
+
+      body {
+        background: var(--bg);
+        font-family: "Inter", Arial, sans-serif;
+        color: var(--text);
+        padding: 25px;
+        max-width: 760px;
+        margin: auto;
+        line-height: 1.6;
+      }
+
+      h1 {
+        text-align: center;
+        font-size: 26px;
+        font-weight: 700;
+        margin-bottom: 25px;
+        background: linear-gradient(90deg, #00f7a7, #00d0ff);
+        -webkit-background-clip: text;
+        color: transparent;
+      }
+
+      .box {
+        background: var(--card);
+        padding: 22px;
+        border-radius: 14px;
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        box-shadow: 0 0 14px rgba(0, 255, 160, 0.08);
+      }
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--subtext);
+        font-size: 14px;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--input);
+        color: var(--text);
+        margin-bottom: 15px;
+        outline: none;
+        transition: 0.2s;
+        font-size: 15px;
+      }
+
+      input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 6px rgba(0, 255, 140, 0.4);
+      }
+
+      textarea {
+        width: 100%;
+        height: 300px;
+        padding: 14px;
+        background: #0d0d0d;
+        border: 1px solid var(--border);
+        color: var(--primary);
+        font-family: monospace;
+        border-radius: 10px;
+        font-size: 14px;
+        resize: vertical;
+        box-shadow: inset 0 0 10px rgba(0, 255, 140, 0.07);
+      }
+
+      .bookmark-box {
+        background: #101010;
+        padding: 15px;
+        border-radius: 12px;
+        margin-top: 12px;
+        border: 1px solid var(--border);
+        text-align: center;
+      }
+
+      .bookmark-link {
+        background: var(--primary);
+        padding: 12px 22px;
+        color: #000;
+        font-weight: 700;
+        border-radius: 10px;
+        display: inline-block;
+        text-decoration: none;
+        font-size: 15px;
+        transition: 0.2s;
+      }
+
+      .bookmark-link:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>⚡ Generator BOT ANTAM</h1>
+
+    <div class="box">
+      <h3 style="margin-top: 0; margin-bottom: 15px">
+        ⏱ Waktu Mulai Klik Otomatis
+      </h3>
+
+      <label>Jam</label>
+      <input id="jam" type="number" placeholder="Contoh: 8" />
+
+      <label>Menit</label>
+      <input id="menit" type="number" placeholder="Contoh: 0" />
+
+      <label>Detik</label>
+      <input id="detik" type="number" placeholder="Contoh: 0" />
+    </div>
+
+    <div class="box">
+      <h3 style="margin-top: 0; margin-bottom: 15px">
+        🔥 SCRIPT BOT UNIVERSAL (Bookmarklet)
+      </h3>
+
+      <div class="bookmark-box">
+        <a id="bookmarkBtn" class="bookmark-link" href="#">
+          BOT ANTREAN ANTAM
+        </a>
+        <p>Drag tombol ini ke Bookmark</p>
+      </div>
+
+      <textarea id="output" readonly></textarea>
+    </div>
+
+    <script>
+      function generateBookmarklet() {
+        let H = document.getElementById("jam").value || 0;
+        let M = document.getElementById("menit").value || 0;
+        let S = document.getElementById("detik").value || 0;
+
+        let code = `
+(function(){
+  if (window.antamBotRunning) {
+    console.log("%c BOT ANTAM STOPPED ","background:#ff4444;color:white;padding:4px");
+    window.antamBotRunning = false;
+    clearInterval(window.antamBotInterval);
+    return;
+  }
+
+  console.log("%c BOT ANTAM STARTED ","background:#00c851;color:black;padding:4px");
+  window.antamBotRunning = true;
+
+  const TARGET_H = ${H};
+  const TARGET_M = ${M};
+  const TARGET_S = ${S};
+  const CLICK_INTERVAL = 80;
+
+  function captchaVisible() {
+    return (
+      document.querySelector("img[src*='captcha']") ||
+      document.querySelector("#captcha") ||
+      document.querySelector(".captcha") ||
+      document.querySelector(".captcha-container")
+    );
+  }
+
+  const isTesting = !!document.getElementById("btnQueue");
+
+  window.antamBotInterval = setInterval(() => {
+    if (!window.antamBotRunning) return;
+
+    if (captchaVisible()) {
+      console.log("%c CAPTCHA TERDETEKSI — BOT PAUSE ","background:#ffbb33;color:black;padding:4px");
+      return;
+    }
+
+    let now = new Date();
+    let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+
+    if (h < TARGET_H || (h === TARGET_H && m < TARGET_M)) return;
+    if (h === TARGET_H && m === TARGET_M && s < TARGET_S) return;
+
+    let btn = isTesting
+      ? document.getElementById("btnQueue")
+      : document.querySelector("button[type='submit']");
+
+    if (btn && !btn.disabled && window.getComputedStyle(btn).display !== "none") {
+      btn.click();
+      console.log("BOT DONE, STOP");
+      window.antamBotRunning = false;
+      clearInterval(window.antamBotInterval);
+    }
+  }, CLICK_INTERVAL);
+
+})();
+`;
+
+        let bookmarklet = "javascript:" + encodeURIComponent(code);
+        document.getElementById("bookmarkBtn").href = bookmarklet;
+        document.getElementById("output").value = code;
+      }
+
+      setInterval(generateBookmarklet, 300);
+    </script>
+  </body>
+</html>
