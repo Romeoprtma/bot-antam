@@ -179,11 +179,31 @@
 
   const isTesting = !!document.getElementById("btnQueue");
 
+  function findAntamButton() {
+    // 1. Mode testing jika tombol btnQueue ada
+    if (isTesting) return document.getElementById("btnQueue");
+
+    // 2. Coba cari tombol submit
+    let btn = document.querySelector("button[type='submit']");
+    if (btn) return btn;
+
+    // 3. Jika tombol submit tidak ada, cari tombol berdasarkan teks "Ambil Antrean"
+    btn = [...document.querySelectorAll("button")].find(b =>
+      b.innerText.trim().toLowerCase().includes("ambil antrean")
+    );
+    if (btn) return btn;
+    
+    btn = document.querySelector("button.btn-warning, button.btn-primary, button.btn-success");
+    if (btn) return btn;
+
+    return btn || null;
+  }
+
   window.antamBotInterval = setInterval(() => {
     if (!window.antamBotRunning) return;
 
     if (captchaVisible()) {
-      console.log("%c CAPTCHA TERDETEKSI — BOT PAUSE ","background:#ffbb33;color:black;padding:4px");
+      console.log("%c CAPTCHA TERDEKSI — BOT PAUSE ","background:#ffbb33;color:black;padding:4px");
       return;
     }
 
@@ -193,9 +213,7 @@
     if (h < TARGET_H || (h === TARGET_H && m < TARGET_M)) return;
     if (h === TARGET_H && m === TARGET_M && s < TARGET_S) return;
 
-    let btn = isTesting
-      ? document.getElementById("btnQueue")
-      : document.querySelector("button[type='submit']");
+    let btn = findAntamButton();
 
     if (btn && !btn.disabled && window.getComputedStyle(btn).display !== "none") {
       btn.click();
