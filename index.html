@@ -151,82 +151,103 @@
         let M = document.getElementById("menit").value || 0;
         let S = document.getElementById("detik").value || 0;
 
-        let code = `
-(function(){
-  if (window.antamBotRunning) {
-    console.log("%c BOT ANTAM STOPPED ","background:#ff4444;color:white;padding:4px");
-    window.antamBotRunning = false;
-    clearInterval(window.antamBotInterval);
-    return;
-  }
-
-  console.log("%c BOT ANTAM STARTED ","background:#00c851;color:black;padding:4px");
-  window.antamBotRunning = true;
-
-  const TARGET_H = ${H};
-  const TARGET_M = ${M};
-  const TARGET_S = ${S};
-  const CLICK_INTERVAL = 80;
-
-  function captchaVisible() {
-    return (
-      document.querySelector("img[src*='captcha']") ||
-      document.querySelector("#captcha") ||
-      document.querySelector(".captcha") ||
-      document.querySelector(".captcha-container")
-    );
-  }
-
-  const isTesting = !!document.getElementById("btnQueue");
-
-  function findAntamButton() {
-    // 1. Mode testing jika tombol btnQueue ada
-    if (isTesting) return document.getElementById("btnQueue");
-
-    // 2. Coba cari tombol submit
-    let btn = document.querySelector("button[type='submit']");
-    if (btn) return btn;
-
-    // 3. Jika tombol submit tidak ada, cari tombol berdasarkan teks "Ambil Antrean"
-    btn = [...document.querySelectorAll("button")].find(b =>
-      b.innerText.trim().toLowerCase().includes("ambil antrean")
-    );
-    if (btn) return btn;
-    
-    btn = document.querySelector("button.btn-warning, button.btn-primary, button.btn-success");
-    if (btn) return btn;
-
-    return btn || null;
-  }
-
-  window.antamBotInterval = setInterval(() => {
-    if (!window.antamBotRunning) return;
-
-    if (captchaVisible()) {
-      console.log("%c CAPTCHA TERDEKSI — BOT PAUSE ","background:#ffbb33;color:black;padding:4px");
-      return;
+        let code = `(function () {
+    if (window.antamBotRunning) {
+        console.log("%c BOT ANTAM STOPPED ", "background:#ff4444;color:white;padding:4px");
+        window.antamBotRunning = false;
+        clearInterval(window.antamBotInterval);
+        return;
     }
 
-    let now = new Date();
-    let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+    console.log("%c BOT ANTAM STARTED ", "background:#00c851;color:black;padding:4px");
+    window.antamBotRunning = true;
 
-    if (h < TARGET_H || (h === TARGET_H && m < TARGET_M)) return;
-    if (h === TARGET_H && m === TARGET_M && s < TARGET_S) return;
+    const TARGET_H = ${H};
+    const TARGET_M = ${M};
+    const TARGET_S = ${S};
 
-    let btn = findAntamButton();
+    const CLICK_INTERVAL = 300;
+    let lastSecond = null;
 
-    if (btn && !btn.disabled && window.getComputedStyle(btn).display !== "none") {
-      btn.click();
-      console.log("BOT DONE, STOP");
-      window.antamBotRunning = false;
-      clearInterval(window.antamBotInterval);
+    function getAntamTime() {
+        let clock = document.getElementById("clock");
+        if (clock) {
+            let parts = clock.textContent.trim().split(":");
+            if (parts.length === 3) {
+                return {
+                    h: parseInt(parts[0]),
+                    m: parseInt(parts[1]),
+                    s: parseInt(parts[2])
+                };
+            }
+        }
+        let now = new Date();
+        return {
+            h: now.getHours(),
+            m: now.getMinutes(),
+            s: now.getSeconds()
+        };
     }
-  }, CLICK_INTERVAL);
 
-})();
-`;
+    function captchaVisible() {
+        return (
+            document.querySelector("img[src*='captcha']") ||
+            document.querySelector("#captcha") ||
+            document.querySelector(".captcha") ||
+            document.querySelector(".captcha-container")
+        );
+    }
+
+    function findAntamButton() {
+        let btn = document.querySelector("#btnQueue");
+        if (btn) return btn;
+
+        btn = document.querySelector("button[type='submit']");
+        if (btn) return btn;
+
+        btn = [...document.querySelectorAll("button")].find(b =>
+            b.innerText.trim().toLowerCase().includes("ambil antrean")
+        );
+        if (btn) return btn;
+
+        btn = document.querySelector("button.btn-warning, button.btn-primary, button.btn-success");
+        return btn || null;
+    }
+
+    window.antamBotInterval = setInterval(() => {
+        if (!window.antamBotRunning) return;
+
+        if (captchaVisible()) {
+            console.log("%c CAPTCHA TERDETEKSI — BOT PAUSE ", "background:#ffbb33;color:black;padding:4px");
+            return;
+        }
+
+        let { h, m, s } = getAntamTime();
+
+        if (s === lastSecond) return;
+        lastSecond = s;
+
+        if (h < TARGET_H || (h === TARGET_H && m < TARGET_M)) return;
+        if (h === TARGET_H && m === TARGET_M && s < TARGET_S) return;
+
+        let btn = findAntamButton();
+
+        if (btn && !btn.disabled && window.getComputedStyle(btn).display !== "none") {
+
+            // LOG WAKTU KLIK
+            let timeClicked = \`\${String(h).padStart(2, "0")}:\${String(m).padStart(2, "0")}:\${String(s).padStart(2, "0")}\`;
+            console.log(\`%c BERHASIL KLIK pada \${timeClicked} \`, "background:#00f7a7;color:black;padding:4px");
+
+            btn.click();
+            window.antamBotRunning = false;
+            clearInterval(window.antamBotInterval);
+        }
+
+    }, CLICK_INTERVAL);
+})();`;
 
         let bookmarklet = "javascript:" + encodeURIComponent(code);
+
         document.getElementById("bookmarkBtn").href = bookmarklet;
         document.getElementById("output").value = code;
       }
