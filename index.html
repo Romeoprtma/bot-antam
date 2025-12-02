@@ -153,92 +153,129 @@
 
         let code = `(function () {
 
-if (window.antamBotRunning) {
-    console.log("%c BOT ANTAM STOPPED ","background:#ff4444;color:white;padding:4px");
-    window.antamBotRunning=false;
-    clearInterval(window.antamBotInterval);
-    clearInterval(window.antamRefreshInterval);
-    return;
+/* =============================
+   PERSIST BOT STATE (IMPORTANT)
+============================= */
+if (!localStorage.getItem("antamBotState")) {
+    localStorage.setItem("antamBotState", "off");
 }
 
-console.log("%c BOT ANTAM STARTED ","background:#00f7a7;color:black;padding:4px");
-window.antamBotRunning=true;
+if (localStorage.getItem("antamBotState") === "on") {
+    console.log("%c BOT ACTIVE (RESTORED AFTER REFRESH)",
+        "background:#00f7a7;color:#000;padding:4px;font-weight:bold;");
+} else {
+    console.log("%c BOT STARTED", 
+        "background:#00f7a7;color:#000;padding:4px;font-weight:bold;");
+    localStorage.setItem("antamBotState", "on");
+}
 
-const TARGET_H = ${H} * 1;
-const TARGET_M = ${M} * 1;
-const TARGET_S = ${S} * 1;
+/* =============================
+   LOAD TARGET TIME (from bookmarklet)
+============================= */
+localStorage.setItem("antamTargetH", ${H});
+localStorage.setItem("antamTargetM", ${M});
+localStorage.setItem("antamTargetS", ${S});
+
+const TARGET_H = parseInt(localStorage.getItem("antamTargetH"));
+const TARGET_M = parseInt(localStorage.getItem("antamTargetM"));
+const TARGET_S = parseInt(localStorage.getItem("antamTargetS"));
 
 const CLICK_INTERVAL = 50;
 
-// === AUTO REFRESH CONFIG ===
+/* =============================
+   STOP REFRESH AT 06:59
+============================= */
 const REFRESH_STOP_H = 6;
 const REFRESH_STOP_M = 59;
 
-function autoRefresh(t) {
-    if (!t) return;
-
-    if (t.h === REFRESH_STOP_H && t.m === REFRESH_STOP_M) {
-        console.log("%c AUTO REFRESH STOPPED — 06:59 TERCAPAI ",
-            "background:#ffcc00;color:#000;padding:4px;font-weight:bold;");
-        window.antamAutoRefresh = false;
-        clearInterval(window.antamRefreshInterval);
-        return;
-    }
-
-    console.log("%c REFRESH PAGE... ","background:#333;color:#0f0;padding:4px");
-    location.reload();
-}
-
-// Ambil waktu dari website
+/* =============================
+   GET ANTAM CLOCK
+============================= */
 function getAntamTime() {
     let t = document.querySelector("#clock");
-    if (t) {
-        let [h, m, s] = t.textContent.trim().split(":").map(n => parseInt(n));
-        return { h, m, s };
-    }
-    return null;
+    if (!t) return null;
+    let [h, m, s] = t.textContent.trim().split(":").map(n => parseInt(n));
+    return { h, m, s };
 }
 
+/* =============================
+   FIND BUTTON
+============================= */
 function findButton() {
     return (
         document.querySelector("button.btn-warning") ||
         document.querySelector("button[type='submit']") ||
-        [...document.querySelectorAll("button")].find(b =>
-            b.innerText.includes("Antrean") || b.innerText.includes("Ambil")
+        [...document.querySelectorAll("button")].find(
+            b => b.innerText.includes("Antrean") || b.innerText.includes("Ambil")
         )
     );
 }
 
+/* =============================
+   AUTO REFRESH (DOES NOT STOP BOT)
+============================= */
+function autoRefresh(t) {
+    if (t.h === REFRESH_STOP_H && t.m === REFRESH_STOP_M) {
+        console.log("%c AUTO REFRESH STOPPED — 06:59 TERCAPAI",
+            "background:#ffcc00;color:#000;padding:4px;font-weight:bold;");
+        return;
+    }
+
+    console.log("%c REFRESHING...", "background:#333;color:#0f0;padding:4px");
+    location.reload(); // bot state tetap ON di localStorage
+}
+
+/* =============================
+   BOT LOOP
+============================= */
 window.antamBotInterval = setInterval(() => {
+    if (localStorage.getItem("antamBotState") !== "on") return;
+
     let t = getAntamTime();
     if (!t) return;
 
     let { h, m, s } = t;
 
-    // Sebelum waktu target → refresh otomatis
-    if (h < TARGET_H || (h === TARGET_H && m < TARGET_M) || (h === TARGET_H && m === TARGET_M && s < TARGET_S)) {
+    // Belum waktunya klik => refresh
+    if (
+        h < TARGET_H ||
+        (h === TARGET_H && m < TARGET_M) ||
+        (h === TARGET_H && m === TARGET_M && s < TARGET_S)
+    ) {
         autoRefresh(t);
         return;
     }
 
     let btn = findButton();
-
     if (!btn || btn.disabled) {
         autoRefresh(t);
         return;
     }
 
-    // KLIK!
-    console.log("%c KLIK! ⏱ " + h + ":" + m + ":" + s,
+    // KLIK
+    console.log("%c KLIK!! ⏱ " + h + ":" + m + ":" + s,
         "background:#00ff99;color:#000;padding:4px;font-weight:bold;");
+    
     btn.click();
 
+    // Bot selesai setelah klik
+    localStorage.setItem("antamBotState", "off");
     clearInterval(window.antamBotInterval);
-    window.antamBotRunning = false;
 
 }, CLICK_INTERVAL);
 
+/* =============================
+   TOGGLE (Klik ulang bookmarklet = OFF)
+============================= */
+if (window._antamToggle) {
+    localStorage.setItem("antamBotState", "off");
+    console.log("%c BOT STOPPED MANUALLY",
+        "background:#ff4444;color:#fff;padding:4px;font-weight:bold;");
+}
+window._antamToggle = true;
+
 })();
+
 `;
         let bookmarklet = "javascript:" + encodeURIComponent(code);
 
