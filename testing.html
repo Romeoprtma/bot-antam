@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mock ANTAM BOT Test V2</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body {
+        font-family: Arial;
+        background: #ecf0ff;
+        margin: 0;
+      }
+      header {
+        background: #004aad;
+        color: #fff;
+        padding: 14px;
+        text-align: center;
+        font-size: 19px;
+      }
+      .card {
+        background: #fff;
+        width: 90%;
+        max-width: 600px;
+        margin: 22px auto;
+        padding: 22px;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      }
+      h2 {
+        text-align: center;
+        margin-top: 0;
+        color: #004aad;
+      }
+      #clock {
+        font-size: 36px;
+        font-weight: bold;
+        text-align: center;
+      }
+      label {
+        font-weight: bold;
+        margin-top: 12px;
+        display: block;
+      }
+      input,
+      button {
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid #aaa;
+        font-size: 16px;
+        margin-top: 7px;
+      }
+      .btn-warning {
+        background: #ffc400;
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+      }
+      .success,
+      .fail {
+        padding: 14px;
+        border-radius: 10px;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 12px;
+        display: none;
+        font-size: 17px;
+      }
+      .success {
+        background: #00d782;
+        color: #003720;
+      }
+      .fail {
+        background: #ff5b5b;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Mock ANTAM (Testing BOT Ambil Antrean)</header>
+
+    <!-- JAM REALTIME -->
+    <div class="card">
+      <h2>Jam Sistem (Real Live)</h2>
+      <div id="clock">00:00:00</div>
+    </div>
+
+    <!-- WAKTU AMBIL ANTREAN SETTER -->
+    <div class="card">
+      <h2>Set Jam Mulai Antrean</h2>
+
+      <label>Tentukan Jam Mulai Ambil Antrean</label>
+      <input type="number" id="jamA" placeholder="Jam (0-23)" />
+      <input type="number" id="menitA" placeholder="Menit (0-59)" />
+      <input type="number" id="detikA" placeholder="Detik (0-59)" />
+      <button onclick="setAmbilTime()" class="btn-warning">
+        Set Waktu Mulai
+      </button>
+
+      <p
+        id="jadwalTxt"
+        style="
+          text-align: center;
+          font-weight: bold;
+          color: #004aad;
+          margin-top: 14px;
+        "></p>
+    </div>
+
+    <!-- TOMBOL YANG DICLIK BOT -->
+    <div class="card">
+      <h2>Tombol Antrean</h2>
+      <button id="btnAmbil" class="btn-warning">
+        Ambil Antrean (BOT Target)
+      </button>
+
+      <div class="success" id="alertOK">✔ BOT BERHASIL MENGAMBIL ANTREAN</div>
+      <div class="fail" id="alertNO">❌ BOT TERLAMBAT / GAGAL</div>
+    </div>
+
+    <script>
+      // ▪ Jam realtime ANTAM (tetap jalan)
+      setInterval(() => {
+        let n = new Date();
+        clock.textContent = n.toLocaleTimeString("id-ID", { hour12: false });
+      }, 1000);
+
+      // ▪ Variabel Jam Ambil (Inilah yang BOT harus kejar)
+      let A_H = null,
+        A_M = null,
+        A_S = null;
+      let antreanClicked = false;
+
+      // Set waktu target ambil antrean
+      function setAmbilTime() {
+        A_H = parseInt(jamA.value) || 0;
+        A_M = parseInt(menitA.value) || 0;
+        A_S = parseInt(detikA.value) || 0;
+        jadwalTxt.textContent =
+          "Jadwal antrean dibuka pada " +
+          A_H +
+          ":" +
+          String(A_M).padStart(2, "0") +
+          ":" +
+          String(A_S).padStart(2, "0");
+      }
+
+      // Jika BOT klik tombol → panggil fungsi ini
+      document.getElementById("btnAmbil").addEventListener("click", () => {
+        antreanClicked = true;
+        alertOK.style.display = "block";
+        alertNO.style.display = "none";
+      });
+
+      // ⛔ Deteksi apakah BOT TERLAMBAT klik
+      setInterval(() => {
+        if (A_H === null) return; // belum diset
+        let t = new Date();
+        let h = t.getHours(),
+          m = t.getMinutes(),
+          s = t.getSeconds();
+
+        // ketika jam antrean tercapai tapi tombol belum diklik
+        if (h === A_H && m === A_M && s === A_S + 2 && !antreanClicked) {
+          alertNO.style.display = "block";
+        }
+      }, 500);
+    </script>
+  </body>
+</html>

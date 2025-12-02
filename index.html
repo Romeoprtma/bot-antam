@@ -152,100 +152,94 @@
         let S = document.getElementById("detik").value || 0;
 
         let code = `(function () {
-    if (window.antamBotRunning) {
-        console.log("%c BOT ANTAM STOPPED ", "background:#ff4444;color:white;padding:4px");
-        window.antamBotRunning = false;
-        clearInterval(window.antamBotInterval);
+
+if (window.antamBotRunning) {
+    console.log("%c BOT ANTAM STOPPED ","background:#ff4444;color:white;padding:4px");
+    window.antamBotRunning=false;
+    clearInterval(window.antamBotInterval);
+    clearInterval(window.antamRefreshInterval);
+    return;
+}
+
+console.log("%c BOT ANTAM STARTED ","background:#00f7a7;color:black;padding:4px");
+window.antamBotRunning=true;
+
+const TARGET_H = ${H} * 1;
+const TARGET_M = ${M} * 1;
+const TARGET_S = ${S} * 1;
+
+const CLICK_INTERVAL = 50;
+
+// === AUTO REFRESH CONFIG ===
+const REFRESH_STOP_H = 6;
+const REFRESH_STOP_M = 59;
+
+function autoRefresh(t) {
+    if (!t) return;
+
+    if (t.h === REFRESH_STOP_H && t.m === REFRESH_STOP_M) {
+        console.log("%c AUTO REFRESH STOPPED — 06:59 TERCAPAI ",
+            "background:#ffcc00;color:#000;padding:4px;font-weight:bold;");
+        window.antamAutoRefresh = false;
+        clearInterval(window.antamRefreshInterval);
         return;
     }
 
-    console.log("%c BOT ANTAM STARTED ", "background:#00c851;color:black;padding:4px");
-    window.antamBotRunning = true;
+    console.log("%c REFRESH PAGE... ","background:#333;color:#0f0;padding:4px");
+    location.reload();
+}
 
-    const TARGET_H = ${H};
-    const TARGET_M = ${M};
-    const TARGET_S = ${S};
+// Ambil waktu dari website
+function getAntamTime() {
+    let t = document.querySelector("#clock");
+    if (t) {
+        let [h, m, s] = t.textContent.trim().split(":").map(n => parseInt(n));
+        return { h, m, s };
+    }
+    return null;
+}
 
-    const CLICK_INTERVAL = 300;
-    let lastSecond = null;
+function findButton() {
+    return (
+        document.querySelector("button.btn-warning") ||
+        document.querySelector("button[type='submit']") ||
+        [...document.querySelectorAll("button")].find(b =>
+            b.innerText.includes("Antrean") || b.innerText.includes("Ambil")
+        )
+    );
+}
 
-    function getAntamTime() {
-        let clock = document.getElementById("clock");
-        if (clock) {
-            let parts = clock.textContent.trim().split(":");
-            if (parts.length === 3) {
-                return {
-                    h: parseInt(parts[0]),
-                    m: parseInt(parts[1]),
-                    s: parseInt(parts[2])
-                };
-            }
-        }
-        let now = new Date();
-        return {
-            h: now.getHours(),
-            m: now.getMinutes(),
-            s: now.getSeconds()
-        };
+window.antamBotInterval = setInterval(() => {
+    let t = getAntamTime();
+    if (!t) return;
+
+    let { h, m, s } = t;
+
+    // Sebelum waktu target → refresh otomatis
+    if (h < TARGET_H || (h === TARGET_H && m < TARGET_M) || (h === TARGET_H && m === TARGET_M && s < TARGET_S)) {
+        autoRefresh(t);
+        return;
     }
 
-    function captchaVisible() {
-        return (
-            document.querySelector("img[src*='captcha']") ||
-            document.querySelector("#captcha") ||
-            document.querySelector(".captcha") ||
-            document.querySelector(".captcha-container")
-        );
+    let btn = findButton();
+
+    if (!btn || btn.disabled) {
+        autoRefresh(t);
+        return;
     }
 
-    function findAntamButton() {
-        let btn = document.querySelector("#btnQueue");
-        if (btn) return btn;
+    // KLIK!
+    console.log("%c KLIK! ⏱ " + h + ":" + m + ":" + s,
+        "background:#00ff99;color:#000;padding:4px;font-weight:bold;");
+    btn.click();
 
-        btn = document.querySelector("button[type='submit']");
-        if (btn) return btn;
+    clearInterval(window.antamBotInterval);
+    window.antamBotRunning = false;
 
-        btn = [...document.querySelectorAll("button")].find(b =>
-            b.innerText.trim().toLowerCase().includes("ambil antrean")
-        );
-        if (btn) return btn;
+}, CLICK_INTERVAL);
 
-        btn = document.querySelector("button.btn-warning, button.btn-primary, button.btn-success");
-        return btn || null;
-    }
-
-    window.antamBotInterval = setInterval(() => {
-        if (!window.antamBotRunning) return;
-
-        if (captchaVisible()) {
-            console.log("%c CAPTCHA TERDETEKSI — BOT PAUSE ", "background:#ffbb33;color:black;padding:4px");
-            return;
-        }
-
-        let { h, m, s } = getAntamTime();
-
-        if (s === lastSecond) return;
-        lastSecond = s;
-
-        if (h < TARGET_H || (h === TARGET_H && m < TARGET_M)) return;
-        if (h === TARGET_H && m === TARGET_M && s < TARGET_S) return;
-
-        let btn = findAntamButton();
-
-        if (btn && !btn.disabled && window.getComputedStyle(btn).display !== "none") {
-
-            // LOG WAKTU KLIK
-            let timeClicked = \`\${String(h).padStart(2, "0")}:\${String(m).padStart(2, "0")}:\${String(s).padStart(2, "0")}\`;
-            console.log(\`%c BERHASIL KLIK pada \${timeClicked} \`, "background:#00f7a7;color:black;padding:4px");
-
-            btn.click();
-            window.antamBotRunning = false;
-            clearInterval(window.antamBotInterval);
-        }
-
-    }, CLICK_INTERVAL);
-})();`;
-
+})();
+`;
         let bookmarklet = "javascript:" + encodeURIComponent(code);
 
         document.getElementById("bookmarkBtn").href = bookmarklet;
